@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>董監事責任險（D&O）與審計報告延遲（ARL）：考量董監事持股質押之調節效果</title>
+  <style>
+    :root {
+      --bg-color: #FAF8F5;
+      --card-bg: #FFFFFF;
+      --text-main: #2D3142;
+      --text-muted: #5F6368;
+      --border-color: #EAE6E1;
+      --accent-green: #4A7C59;
+      --accent-green-bg: #EDF3EF;
+      --accent-red: #C9655D;
+      --accent-red-bg: #FAF0EF;
+      --accent-amber: #D49B55;
+      --accent-amber-bg: #FDF7EF;
+      --accent-blue: #4A6FA5;
+      --accent-blue-bg: #EFF3F8;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #2D3142;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* 投影片主畫布容器 (16:9 比例) */
+    .deck-container {
+      position: relative;
+      width: 100%;
+      max-width: 1200px;
+      aspect-ratio: 16 / 9;
+      min-height: 675px;
+      background-color: var(--bg-color);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 頂部進度條 */
+    .progress-bar-container {
+      width: 100%;
+      height: 4px;
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    .progress-bar {
+      height: 100%;
+      background-color: var(--accent-amber);
+      width: 11.11%;
+      transition: width 0.3s ease;
+    }
+
+    /* 頂部導航指示列 (Graph Breadcrumb) */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 40px 10px 40px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .graph-node-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--accent-blue);
+      background-color: var(--accent-blue-bg);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* 單張投影片滑動容器 */
+    .slide-wrapper {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 24px 44px 20px 44px;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* 標題區 */
+    .slide-header {
+      margin-bottom: 18px;
+    }
+    .slide-header h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.3;
+      letter-spacing: -0.3px;
+    }
+    .slide-header .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* 內容排版容器 */
+    .content-area {
+      flex: 1;
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
+      min-height: 0; /* 防止子元素溢出 */
+    }
+
+    /* 卡片設計規範 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: var(--shadow-hover);
+    }
+
+    .card.green-accent {
+      border-top: 4px solid var(--accent-green);
+      background: linear-gradient(180deg, var(--accent-green-bg) 0%, var(--card-bg) 18%);
+    }
+    .card.red-accent {
+      border-top: 4px solid var(--accent-red);
+      background: linear-gradient(180deg, var(--accent-red-bg) 0%, var(--card-bg) 18%);
+    }
+    .card.amber-accent {
+      border-top: 4px solid var(--accent-amber);
+      background: linear-gradient(180deg, var(--accent-amber-bg) 0%, var(--card-bg) 18%);
+    }
+    .card.blue-accent {
+      border-top: 4px solid var(--accent-blue);
+      background: linear-gradient(180deg, var(--accent-blue-bg) 0%, var(--card-bg) 18%);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card.green-accent .card-title { color: var(--accent-green); }
+    .card.red-accent .card-title { color: var(--accent-red); }
+    .card.amber-accent .card-title { color: var(--accent-amber); }
+    .card.blue-accent .card-title { color: var(--accent-blue); }
+
+    .card p {
+      font-size: 13.5px;
+      line-height: 1.75;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+    .card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .tag-badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+    .badge-green { background: #E1EFE6; color: #2D5A38; }
+    .badge-red { background: #F8E5E3; color: #8F332C; }
+    .badge-amber { background: #F7EAD6; color: #8C5B1E; }
+    .badge-blue { background: #E2EAF4; color: #2B4E7A; }
+
+    /* 水平因果流程排版 */
+    .flow-step-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+    .flow-step {
+      display: flex;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 18px;
+      gap: 16px;
+      box-shadow: var(--shadow);
+    }
+    .flow-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .flow-icon-green { background: var(--accent-green-bg); color: var(--accent-green); }
+    .flow-icon-red { background: var(--accent-red-bg); color: var(--accent-red); }
+    .flow-icon-amber { background: var(--accent-amber-bg); color: var(--accent-amber); }
+
+    .flow-step-content h4 {
+      font-size: 14.5px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .flow-step-content p {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    /* 頁尾出處標籤 */
+    .slide-footer {
+      padding-top: 12px;
+      margin-top: auto;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .source-label {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* 底部控制器 */
+    .controls {
+      position: absolute;
+      bottom: 14px;
+      right: 36px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+    }
+    .btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      background: #F0EDE8;
+      border-color: #D3CDC4;
+    }
+    .page-indicator {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    /* 封面頁特製排版 */
+    .cover-slide {
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .cover-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1.35;
+      margin-bottom: 12px;
+    }
+    .cover-subtitle {
+      font-size: 18px;
+      color: var(--accent-blue);
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .cover-desc {
+      max-width: 760px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+    }
+    .cover-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 860px;
+      width: 100%;
+    }
+    .cover-meta-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: left;
+    }
+    .cover-meta-card h5 {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .cover-meta-card p {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container">
+    <!-- 頂部進度條 -->
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- 頂部 Graph 節點狀態列 -->
+    <div class="top-nav">
+      <span class="graph-node-indicator" id="graphIndicator">節點 1/9：全景網絡與研究總覽</span>
+      <span>碩士學位論文文獻回顧知識庫 · 董監責任險與審計時效</span>
+    </div>
+
+    <!-- 投影片內容容器 -->
+    <div class="slide-wrapper">
+
+      <!-- Slide 1: 封面與研究總覽 -->
+      <div class="slide cover-slide active" data-title="節點 1/9：全景網絡與研究總覽">
+        <h1 class="cover-title">董監事責任險（D&O）與審計報告延遲（ARL）</h1>
+        <h2 class="cover-subtitle">考量董監事持股質押之調節效果</h2>
+        <p class="cover-desc">
+          本研究深入剖析現代公司治理的核心爭端：董監事責任保險究竟是引進外部風險監督的良善機制，亦或是弱化訴訟威嚇、誘發管理階層機會主義的自利保護傘？本研究將此理論分歧延伸至獨立審計師的查核決策與審計報告出具時效（ARL），並結合台灣資本市場獨特的「董監事持股質押」制度背景，檢驗董監事個人財務槓桿對審計查核風險所產生的關鍵調節作用。
+        </p>
+        <div class="cover-meta-grid">
+          <div class="cover-meta-card" style="border-top: 3px solid var(--accent-blue);">
+            <h5>自變數 (Independent Variable)</h5>
+            <p>董監事責任險 (D&O Insurance)</p>
+          </div>
+          <div class="cover-meta-card" style="border-top: 3px solid var(--accent-green);">
+            <h5>依變數 (Dependent Variable)</h5>
+            <p>審計報告延遲 (Audit Report Lag, ARL)</p>
+          </div>
+          <div class="cover-meta-card" style="border-top: 3px solid var(--accent-amber);">
+            <h5>調節變數 (Moderator)</h5>
+            <p>董監事持股質押 (Share Pledging)</p>
+          </div>
+        </div>
+        <div class="slide-footer" style="width: 100%; max-width: 860px; margin-top: 24px;">
+          <span>出處：<span class="source-label">wiki/index.md</span> | 碩士論文研究架構</span>
+          <span>國立大學管理學院會計與財務金融研究所</span>
+        </div>
+      </div>
+
+      <!-- Slide 2: D&O 定義與法規制度背景 -->
+      <div class="slide" data-title="節點 2/9：D&O 定義與法規架構">
+        <div class="slide-header">
+          <h2>核心概念與法制基礎：何謂董監事責任保險（D&O）？</h2>
+          <div class="subtitle">先釐清契約法律實質與台灣法規環境，再行探討其經濟後果</div>
+        </div>
+        <div class="content-area">
+          <div class="card blue-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-blue">契約定義</span>
+              學術定義與保單契約實質
+            </div>
+            <p>
+              董監事責任保險（Directors' and Officers' Liability Insurance, 簡稱 D&O）係由公司出資投保之職業責任保險，其核心目的在於承保公司董監事及高階經營主管於執行公司職務時，因善意疏忽、遺漏或不當行為（Wrongful Acts）遭到股東、主管機關或第三方提起訴訟時，所產生的<strong>民事賠償責任與高額法律抗辯費用</strong>。
+            </p>
+            <p>
+              標準保單結構通常包含個人賠償保障（Side A，在公司依法無法補償時直接賠付董監個人）、公司補償補償（Side B）及證券實體責任（Side C）。值得注意的是，保險合約均明確排除故意詐欺（Fraud）及圖謀不法私人利益之行為，但實務上因訴訟和解多在庭外達成且無需認罪，實質上為管理階層提供了廣泛的財務避風港。
+            </p>
+          </div>
+          <div class="card amber-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-amber">法規沿革</span>
+              台灣《公司法》與主管機關規範
+            </div>
+            <p>
+              在台灣法制演進上，早期實務對公司出資替董監事投保責任險曾有法律正當性爭議。立法院於 2001 年增訂、後於 2018 年大幅修正<strong>《公司法》第 193 條之 1</strong>，明定：「公司得於章程規定，或經董事會決議為董事購買責任保險，以降低董事因執行職務所面臨之訴訟威脅，吸引優秀經營人才。」正式確立其法定地位。
+            </p>
+            <p>
+              配合《證券交易法》第 20 條與第 20 條之 1 針對財務報告重大不實之嚴格民事損害賠償責任，金管會全面將「是否為全體董監投保 D&O」與「是否揭露投保金額及投保內容」列入<strong>公司治理評鑑加分指標</strong>。這使台灣上市櫃企業投保 D&O 逐步從自願性投保轉變為半制度化的公司治理常態，為實證研究提供了清晰的制度基礎。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/taiwan_regulations/台灣董監事責任險法規沿革與揭露規範.md</span> | 《公司法》第193條之1</span>
+          <span>法制背景模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 3: 董監質押定義與法規制度背景 -->
+      <div class="slide" data-title="節點 3/9：董監持股質押定義與法制防線">
+        <div class="slide-header">
+          <h2>核心概念與法制防線：何謂董監事股權質押（Share Pledging）？</h2>
+          <div class="subtitle">台灣資本市場特有的權責不對稱現象與立法防弊機制</div>
+        </div>
+        <div class="content-area">
+          <div class="card amber-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-amber">制度特徵</span>
+              股票質押機制與個人財務槓桿
+            </div>
+            <p>
+              董監事持股質押（Director Share Pledging）係指董監事以其個人名下持有之公司股票作為擔保品，向金融機構設定質權借款。在台灣上市櫃企業（特別是家族控制或企業集團）中，控制股東常透過股票質押套取龐大資金，進行個人轉投資或進一步收購股權以鞏固經營權。
+            </p>
+            <p>
+              質押期間，董監事依然享有完整的股東表決權與股利分配權，但實質上已將持股的下檔風險轉嫁給金融機構，導致董監事的「控制權」遠高於其真正承擔公司盈虧的「現金流量請求權（Cash Flow Rights）」，嚴重加劇了控股股東侵害外部少數股東利益的<strong>第二類型代理問題（Type II Agency Problem）</strong>。
+            </p>
+          </div>
+          <div class="card red-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-red">法制約束</span>
+              斷頭壓力與《公司法》第 197 條之 1
+            </div>
+            <p>
+              金融機構承作質押貸款均設有嚴格的<strong>擔保維持率門檻（通常為 130%～140%）</strong>。一旦公司股價因營運衰退或負面消息而急遽下挫，董監事將面臨銀行要求補足保證金或被迫強制斷頭處分的個人財務滅頂危機。因此，高質押董監事具有極端強烈動機在年度決算日前維持股價高檔。
+            </p>
+            <p>
+              為遏止此一扭曲誘因，我國<strong>《公司法》第 197 條之 1</strong> 明訂法律防線：公開發行股票公司董事設定質權之股數超過選任當時持股二分之一（50%）時，其<strong>超過部分之股份不得行使表決權，不算入已出席股東之表決權數</strong>。此規範凸顯出立法者與監理機關對董監質押引發治理風險的高度警戒。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/taiwan_regulations/台灣董監事質押法規與申報機制.md</span> | 《公司法》第197條之1</span>
+          <span>法制背景模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 4: 兩大對立理論視角 -->
+      <div class="slide" data-title="節點 4/9：兩大理論視角分歧">
+        <div class="slide-header">
+          <h2>理論視角分歧：D&O 是外部監督力量，還是內部自利保護傘？</h2>
+          <div class="subtitle">學術文獻長達數十年的治理辯論：外部監督假說 vs. 道德風險與壕溝假說</div>
+        </div>
+        <div class="content-area">
+          <div class="card green-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-green">正面視角</span>
+              外部監督假說 (Monitoring Hypothesis)
+            </div>
+            <p>
+              <strong>理論立論基石</strong>：由 Holderness (1990) 與 Core (2000) 提出，主張董監責任險本質上是為公司引進了獨立第三方的金融監督力量。保險公司為了控制自身的核保賠付風險，在簽約承保前必須對投保企業的內部控制品質、董事會結構、經營層誠信進行嚴格體檢（Underwriting Scrutiny）。
+            </p>
+            <p>
+              <strong>治理改善機制</strong>：對於公司治理較差的企業，保險人會收取極高的懲罰性保費或訂立嚴格的免責除外條款，從而迫使企業主動健全內控。此外，提供完善的 D&O 責任險能有效解除專業人士承擔個人訴訟的後顧之憂，協助企業招攬真正具備獨立監控能力的外部獨立董監事（Outside Directors），提升整體治理水準。
+            </p>
+          </div>
+          <div class="card red-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-red">負面視角</span>
+              道德風險與壕溝假說 (Moral Hazard & Entrenchment)
+            </div>
+            <p>
+              <strong>理論立論基石</strong>：植根於 Jensen and Meckling (1976) 之代理理論。在現代公司治理架構中，股東提起的證券集體訴訟與個人求償威脅，原本是防範經營者懈怠與背信的重要懲戒工具。然而，高額 D&O 責任險卻將這些個人財務後果轉嫁給保險公司。
+            </p>
+            <p>
+              <strong>代理成本惡化機制</strong>：當管理階層知悉即使決策失誤造成股東權益受損，亦有保險公司代為支付天價和解金與律師費時，經營者的風險自律與謹慎義務隨之大幅下降。經理人更容易躲在「壕溝」中追求企業帝國擴張、特權消費，甚至利用寬鬆的責任環境從事高風險投機或美化財務報表，顯著損害股東利益。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/theories/外部監督假說.md</span> & <span class="source-label">wiki/theories/道德風險假說.md</span></span>
+          <span>理論架構模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 5: 核心因果傳導機制 (D&O -> ARL) -->
+      <div class="slide" data-title="節點 5/9：審計因果傳導路徑">
+        <div class="slide-header">
+          <h2>審計決策黑盒子：D&O 對審計報告延遲（ARL）的因果傳導路徑</h2>
+          <div class="subtitle">獨立查核會計師如何解讀被查核客戶的 D&O 投保訊號？</div>
+        </div>
+        <div class="content-area">
+          <div class="flow-step-container">
+            <div class="flow-step" style="border-left: 4px solid var(--accent-red);">
+              <div class="flow-icon-box flow-icon-red">A</div>
+              <div class="flow-step-content">
+                <h4>路徑 A：道德風險傳導機制（導致 ARL 顯著延長）</h4>
+                <p>
+                  <strong>傳導鏈結</strong>：企業購買高額 D&O 責任險 ➔ 經理人訴訟約束弱化，傾向從事盈餘管理或延遲揭露未實現損失 ➔ 查核會計師評估客戶之<strong>重大不實表達風險（Risk of Material Misstatement）較高</strong> ➔ 為了降低審計失敗之過失法律責任，會計師採取高度保守的防禦性查核策略，擴大實質性測試與憑證抽查樣本 ➔ 雙方在會計估計認列上反覆協商 ➔ <strong>審計報告耗費天數增加，ARL 顯著延長</strong>。
+                </p>
+              </div>
+            </div>
+
+            <div class="flow-step" style="border-left: 4px solid var(--accent-green);">
+              <div class="flow-icon-box flow-icon-green">B</div>
+              <div class="flow-step-content">
+                <h4>路徑 B：外部監督傳導機制（導致 ARL 顯著縮短）</h4>
+                <p>
+                  <strong>傳導鏈結</strong>：企業購買 D&O 責任險 ➔ 經歷保險公司嚴密的事前核保審查與條款約束 ➔ 促使企業健全內部控制制度並吸引外部獨立董監監督 ➔ 財務報導可靠性增加，財務報表重大錯報機率下降 ➔ 查核會計師評估客戶之<strong>內部控制風險與固有風險較低</strong> ➔ 查核程序順暢、雙方針對會計原則爭議減少 ➔ <strong>審計工作高效完成，ARL 顯著縮短</strong>。
+                </p>
+              </div>
+            </div>
+
+            <div class="card" style="padding: 14px 18px; background: #F8F6F2; border-color: #E2DDD5;">
+              <p style="font-size: 13px; color: var(--text-main); line-height: 1.6;">
+                <strong>審計報告延遲（Audit Report Lag, ARL）的衡量</strong>：定義為會計年度結算日（12月31日）至主簽會計師正式出具並簽署查核意見書之日曆天數。ARL 不僅是資訊傳遞效率指標，更是反映審計難度與查核風險的重要代理變數。
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/mechanisms/DO與審計報告延遲機制.md</span></span>
+          <span>機制傳導模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 6: 調節變數機制分析 (董監質押) -->
+      <div class="slide" data-title="節點 6/9：董監質押之調節機制">
+        <div class="slide-header">
+          <h2>財務壓力與風險加乘：董監持股質押之調節機制分析</h2>
+          <div class="subtitle">探討董監事個人面臨股價斷頭壓力時，如何加劇 D&O 與 ARL 的正向關係</div>
+        </div>
+        <div class="content-area">
+          <div class="card red-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-red">誘因扭曲</span>
+              斷頭維持率壓力引發的極端操縱誘因
+            </div>
+            <p>
+              當董監事將大量個人股票向銀行質押套現後，其個人資產淨值便完全繫於公司股價的穩定。一旦股票市價下跌逼近 130% 擔保維持率，董監事若無法在限期內補繳現金保證金，金融機構將直接在市場斷頭拋售持股。
+            </p>
+            <p>
+              這種滅頂威脅使高質押董監事產生極強烈且急迫的誘因：他們會對內部會計部門施壓，要求透過激進的會計政策提前認列營收、遞延認列費用、減少資產減損提列，甚至利用複雜的關係人交易掩飾虧損，以在年底財報出爐前全力支撐股價。
+            </p>
+          </div>
+          <div class="card amber-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-amber">調節交互作用</span>
+              D&O 訴訟免責與質押財務生存壓力的危險結合
+            </div>
+            <p>
+              在調節機制的交互作用下，高額 D&O 責任險提供了<strong>「免除個人法律訴訟責任的防護傘」</strong>，而高董監質押比率則注入了<strong>「維持股價避免斷頭的強烈自利動機」</strong>。兩者的結合宛如給具有強烈操弄意圖的管理層解除了法律威嚇。
+            </p>
+            <p>
+              查核會計師具備高度專業敏感度，深知高質押客戶的舞弊風險與隱瞞未爆彈的機率極高。面對高質押且投保高額 D&O 的企業，會計師必然採取最嚴格的防禦性查核，對各項會計估計嚴格把關並要求管理當局提供更多佐證，導致<strong>D&O 拉長審計報告時程（增加 ARL）的效果在董監質押高的公司中更加顯著</strong>。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/moderators/董監事股權質押的治理效應.md</span> | 調節效果推導</span>
+          <span>調節分析模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 7: 實證文獻檢驗（一）：道德風險與機會主義 -->
+      <div class="slide" data-title="節點 7/9：實證支持一（道德風險）">
+        <div class="slide-header">
+          <h2>實證文獻檢驗（一）：支持道德風險與經理人機會主義</h2>
+          <div class="subtitle">成熟資本市場中，高額 D&O 投保如何被實證檢驗出弱化治理的代價？</div>
+        </div>
+        <div class="content-area">
+          <div class="card red-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-red">JFE 頂刊文獻</span>
+              Lin, Officer, and Zou (2011, JFE)
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+              <strong>研究樣本</strong>：加拿大多倫多證交所 TSE 300 指數成分股，2002–2008 年間共 709 件併購案。
+            </p>
+            <p>
+              <strong>研究問題與邏輯</strong>：檢驗加拿大強制揭露之 D&O 投保額度如何影響收購方在重大併購（M&A）決策中的品質與成效。作者推論 D&O 弱化了股東訴訟約束，助長高管盲目擴張。
+            </p>
+            <p>
+              <strong>實證結論</strong>：高額 D&O 投保公司在併購宣告期的累積異常報酬率（CAR[-2, +2]）<strong>顯著為負</strong>。進一步管道分析發現，高 D&O 買方傾向<strong>支付過高的收購溢價</strong>，且合併後的整體綜效與三年長期經營績效（ROA、資產週轉率）顯著較差。<strong>完全支持道德風險假說</strong>。
+            </p>
+          </div>
+          <div class="card red-accent">
+            <div class="card-title">
+              <span class="tag-badge badge-red">JF 頂刊文獻</span>
+              Chalmers, Dann, and Harford (2002, JF)
+            </div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+              <strong>研究樣本</strong>：美國 72 家於 1992–1996 年間初次公開發行（IPO）且取得機密 D&O 數據之企業。
+            </p>
+            <p>
+              <strong>研究問題與邏輯</strong>：探討 IPO 公司掛牌時購買之 D&O 保險額度，是否反映經理人利用內部私有資訊在股價被市場高估時推動掛牌的機會主義行為。
+            </p>
+            <p>
+              <strong>實證結論</strong>：IPO 當期購買的 D&O 保額與公司發行後三年的長期股票報酬率呈<strong>高度顯著負相關</strong>（投保額度越高，後續三年股價越差）。且事後真正遭到股東控告的企業，在 IPO 時確實購買了顯著較高的保額。<strong>證實自利經理人會預先透過高額保險轉嫁訴訟責任</strong>。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/papers/2011_Lin_DO_Acquisitions.md</span> & <span class="source-label">wiki/papers/2002_Chalmers_DO_Opportunism.md</span></span>
+          <span>實證檢驗模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 8: 實證文獻檢驗（二）：外部監督與台灣質押實證 -->
+      <div class="slide" data-title="節點 8/9：實證支持二（監督與質押）">
+        <div class="slide-header">
+          <h2>實證文獻檢驗（二）：支持外部監督假說與台灣在地質押證據</h2>
+          <div class="subtitle">涵蓋英國、中國市場之治理正面效果，以及台灣董監質押對績效的破壞實證</div>
+        </div>
+        <div class="content-area">
+          <div class="card green-accent">
+            <div class="card-title" style="font-size: 15px;">
+              <span class="tag-badge badge-green">JRI 核心文獻</span>
+              O'Sullivan (1997)
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;"><strong>英國 366 家大型上市公司 (1991)</strong></p>
+            <p style="font-size: 12.5px; line-height: 1.65;">
+              <strong>實證結論</strong>：董事會中外部獨立董事比例每增加 10%，公司購買 D&O 責任險之機率顯著提高 10.3%；而內部執行董事持股比例每增加 10%，購買機率下降 9.6%。
+            </p>
+            <p style="font-size: 12.5px; line-height: 1.65;">
+              <strong>意涵</strong>：證實 D&O 能促進獨立外部董事的招募，兩者協同發揮互補監督效益，且與內部股權激勵具有治理替代效果，<strong>完全支持外部監督假說</strong>。
+            </p>
+          </div>
+
+          <div class="card green-accent">
+            <div class="card-title" style="font-size: 15px;">
+              <span class="tag-badge badge-green">JCF 頂刊文獻</span>
+              Yuan, Sun, and Cao (2016)
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;"><strong>中國 A 股上市公司 (2002–2012)</strong></p>
+            <p style="font-size: 12.5px; line-height: 1.65;">
+              <strong>實證結論</strong>：在新興市場弱外部治理環境下，購買 D&O 與未來股票崩跌風險呈<strong>顯著負相關（抑制崩跌）</strong>。
+            </p>
+            <p style="font-size: 12.5px; line-height: 1.65;">
+              <strong>機制</strong>：D&O 顯著<strong>減少了財務報表重編</strong>並提升 CSR 揭露，且此治理改善效果在董事會獨立性低、非四大會計師查核之弱治理公司最為顯著，凸顯保險人的監督角色。
+            </p>
+          </div>
+
+          <div class="card amber-accent">
+            <div class="card-title" style="font-size: 15px;">
+              <span class="tag-badge badge-amber">台灣實證</span>
+              Kao, Chiou, and Chen (2004)
+            </div>
+            <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 6px;"><strong>台灣上市公司 (TEJ 711 筆觀測值)</strong></p>
+            <p style="font-size: 12.5px; line-height: 1.65;">
+              <strong>實證結論</strong>：嚴謹因果檢驗證實是「董監事持股質押導致後續績效惡化（ROE、ROA、Tobin's Q）」，而非反向因果；且質押破壞力<strong>顯著集中於集團企業</strong>。
+            </p>
+            <p style="font-size: 12.5px; line-height: 1.65;">
+              <strong>意涵</strong>：實證證實質押加劇了台灣企業第二型代理問題，但機構法人持股與負債約束能有效減輕此代理成本。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/papers/1997_OSullivan_DO_CorporateGovernance.md</span> 等三篇文獻</span>
+          <span>實證檢驗模組</span>
+        </div>
+      </div>
+
+      <!-- Slide 9: 研究架構整合、假說推導與論文貢獻 -->
+      <div class="slide" data-title="節點 9/9：理論收斂與假說推導">
+        <div class="slide-header">
+          <h2>理論收斂與假說推導：解開 D&O、持股質押與審計時效之謎</h2>
+          <div class="subtitle">立足國內外頂級實證文獻，推導本碩士論文之核心假說與邊際貢獻</div>
+        </div>
+        <div class="content-area">
+          <div class="card blue-accent" style="flex: 1.1;">
+            <div class="card-title">
+              <span class="tag-badge badge-blue">假說建構</span>
+              本論文核心研究假說推導
+            </div>
+            <p>
+              <strong>主效果競爭假說（D&O 與 ARL 之關係）</strong>：
+              <br>• <strong>H1a (道德風險假說)</strong>：在控制其他條件下，公司購買董監事責任險或投保金額越高，審計報告延遲（ARL）顯著越長。
+              <br>• <strong>H1b (外部監督假說)</strong>：在控制其他條件下，公司購買董監事責任險或投保金額越高，審計報告延遲（ARL）顯著越短。
+            </p>
+            <p>
+              <strong>調節效果假說（董監質押之加乘效果）</strong>：
+              <br>• <strong>H2 (質押調節效果)</strong>：董監事持股質押比例越高，董監事責任險對審計報告延遲（ARL）的正向拉長效果越顯著（質押帶來的斷頭壓力顯著強化了 D&O 的道德風險傾向）。
+            </p>
+          </div>
+
+          <div class="card green-accent" style="flex: 0.9;">
+            <div class="card-title">
+              <span class="tag-badge badge-green">學術貢獻</span>
+              本研究之邊際貢獻與實務意涵
+            </div>
+            <p>
+              <strong>學術文獻貢獻</strong>：突破傳統文獻僅著眼於 D&O 對併購（Lin et al., 2011）或崩跌（Yuan et al., 2016）之資本市場反應，首度從「會計師專業審計時效」視角，實證檢驗審計實務界如何定價 D&O 潛在的道德風險，搭起公司治理與審計研究的橋樑。
+            </p>
+            <p>
+              <strong>政策與實務意涵</strong>：主管機關在推動公司治理評鑑要求上市櫃企業強制投保 D&O 的同時，必須正視董監持股質押對經理人行為的扭曲作用。實證結果提醒監理機關與查核會計師，應對「高質押且投保高額 D&O」之企業保持高度職業懷疑與風險警戒。
+            </p>
+          </div>
+        </div>
+        <div class="slide-footer">
+          <span>出處：<span class="source-label">wiki/synthesis/</span> & <span class="source-label">wiki/index.md</span> | 本碩士學位論文核心假說</span>
+          <span>論文貢獻模組</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 底部切換控制列 -->
+    <div class="controls">
+      <button class="btn" id="prevBtn" onclick="prevSlide()">◀ 上一頁</button>
+      <span class="page-indicator" id="pageIndicator">1 / 9</span>
+      <button class="btn" id="nextBtn" onclick="nextSlide()">下一頁 ▶</button>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const pageIndicator = document.getElementById('pageIndicator');
+    const graphIndicator = document.getElementById('graphIndicator');
+    const progressBar = document.getElementById('progressBar');
+
+    function updateSlide(index) {
+      slides.forEach((slide, i) => {
+        slide.classList.remove('active');
+        if (i === index) {
+          slide.classList.add('active');
+          const title = slide.getAttribute('data-title') || `節點 ${i + 1}/${totalSlides}`;
+          graphIndicator.textContent = title;
+        }
+      });
+      pageIndicator.textContent = `${index + 1} / ${totalSlides}`;
+      progressBar.style.width = `${((index + 1) / totalSlides) * 100}%`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide(currentSlide);
+      }
+    }
+
+    // 鍵盤左右鍵控制
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      }
+    });
+
+    // 初始化狀態
+    updateSlide(0);
+  </script>
+</body>
+</html>
